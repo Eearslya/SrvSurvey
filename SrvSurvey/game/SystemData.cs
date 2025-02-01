@@ -2132,33 +2132,44 @@ namespace SrvSurvey.game
                 .ToList()!;
         }
 
-        public double getRelativeBrightness(double bodyDistanceFromArrivalLS)
-        {
-            if (this.starType == null) return 0;
+		public SystemBody? getCommonParent(SystemBody sibling) {
+			return parentBodies.Find(p => p == sibling || sibling.parentBodies.Contains(p));
+		}
 
-            var dist = bodyDistanceFromArrivalLS - this.distanceFromArrivalLS;
-            var dist2 = Math.Pow(dist, 2);
-            var distMag = dist2.ToString().Length; // Really just using the magnitude not the actual number
-            var relativeHeat = this.surfaceTemperature / distMag;
+		public double getRelativeBrightness(SystemBody star) {
+			if (star.starType == null)
+				return 0;
 
-            return relativeHeat;
-        }
+			var commonParent = getCommonParent(star);
+			if (commonParent == null)
+				return 0.0;
 
-        public double sumSemiMajorAxis(int targetBodyId)
-        {
-            // start with our own distance, then sum our parents until we reach (and include) the target
-            var dist = this.semiMajorAxis;
+			var dist = euclidianDistance(commonParent);
+			dist += star.euclidianDistance(commonParent);
+			dist = Math.Pow(dist, 0.5);
+			Game.log($"Euclidian distance from {this.name} to {star.name}: {dist}");
+			var temp2 = Math.Pow(star.surfaceTemperature, 2);
+			var sqrtWat = (double)star.radius * temp2 / dist;
+			return Math.Pow(sqrtWat, 2);
+		}
 
-            foreach (var parent in this.parentBodies)
-            {
-                dist += parent.semiMajorAxis;
-                if (parent.id == targetBodyId) break;
-            }
+		public double euclidianDistance(SystemBody target) {
+			if (target == this)
+				return 0.0;
 
-            return dist;
-        }
+			// start with our own distance, then sum our parents until we reach (and include) the target
+			var dist = Math.Pow(this.semiMajorAxis, 2.0);
 
-        [JsonIgnore]
+			foreach (var parent in this.parentBodies) {
+				dist += Math.Pow(parent.semiMajorAxis, 2.0);
+				if (parent.id == target.id)
+					break;
+			}
+
+			return dist;
+		}
+
+		[JsonIgnore]
         public int countAnalyzedBioSignals
         {
             get => this.organisms == null

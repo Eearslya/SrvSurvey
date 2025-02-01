@@ -54,23 +54,13 @@ namespace BioCriterias
             if (parentStars2.Count > 0)
             {
                 var parentsByBrightness = parentStars2
-                    .ToDictionary(s => s, s => s.getRelativeBrightness(body.distanceFromArrivalLS))
+                    .ToDictionary(s => s, s => body.getRelativeBrightness(s))
                     .OrderByDescending(s => s.Value)
-                    .Take(2);
+                    .Take(1);
 
                 var brightest = parentsByBrightness.First();
                 parentStars.Clear();
                 parentStars.Add(Util.flattenStarType(brightest.Key.starType));
-
-                if (parentStars2.Count >= 2)
-                {
-                    var nextBrightest = parentsByBrightness.Last();
-                    var delta = nextBrightest.Value / brightest.Value;
-                    Game.log($"{brightest.Key.name}: {brightest.Value} vs {nextBrightest.Key.name}: {nextBrightest.Value} => {delta}");
-
-                    if (delta > 0.93d)
-                        parentStars.Add(Util.flattenStarType(nextBrightest.Key.starType));
-                }
             }
 
             if (parentStars.All(s => s == null))
